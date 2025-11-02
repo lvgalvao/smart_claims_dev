@@ -45,7 +45,6 @@ smart_claims_dev (CATALOG)
 smart_claims_dev/
 ├── README.md                              # Este arquivo
 ├── EXPLICACAO_CATALOG.md                  # Documentação detalhada sobre Unity Catalog
-├── 01_create_catalog_and_schemas.sql     # Script SQL para criação do catálogo e schemas
 ├── 01_create_catalog_and_schemas.ipynb   # Notebook Databricks para Task_001
 ├── 02_create_volumes_and_load_data.ipynb # Notebook Databricks para Task_002
 └── data/
@@ -66,25 +65,23 @@ Criar a estrutura base do projeto no Databricks utilizando **Unity Catalog**, in
 
 #### 1. **Criação do Catálogo `smart_claims_dev`**
 
-Foi criado um catálogo completo no Unity Catalog com as seguintes características:
+Foi criado um catálogo completo no Unity Catalog conforme implementado no notebook:
 
 ```sql
 CREATE CATALOG IF NOT EXISTS smart_claims_dev
 COMMENT 'Catálogo principal para o projeto Smart Claims - Ambiente de Desenvolvimento'
-WITH (
-  DBPROPERTIES (
-    'project' = 'smart_claims',
-    'environment' = 'dev',
-    'created_by' = 'databricks_admin',
-    'created_date' = current_date()
-  )
-);
+```
+
+Seguido pelo comando para usar o catálogo:
+
+```sql
+USE CATALOG smart_claims_dev
 ```
 
 **Exemplos concretos do que isso proporciona:**
 
 - ✅ Isolamento lógico de todos os dados do projeto Smart Claims
-- ✅ Metadados customizados para rastreabilidade (project, environment, created_by, created_date)
+- ✅ Comentário descritivo para documentação e rastreabilidade
 - ✅ Base para compartilhamento entre workspaces/organizações
 - ✅ Governança centralizada de permissões e políticas
 
@@ -95,15 +92,8 @@ Cada schema foi criado com propriedades específicas e comentários descritivos:
 ##### **00_landing** - Zona de Recepção
 
 ```sql
-CREATE SCHEMA IF NOT EXISTS smart_claims_dev.`00_landing`
+CREATE SCHEMA IF NOT EXISTS smart_claims_dev.00_landing
 COMMENT 'Zona de landing - recepção de dados brutos de sistemas externos'
-WITH (
-  DBPROPERTIES (
-    'layer' = 'landing',
-    'retention_days' = '7',
-    'purpose' = 'Armazenamento temporário de dados brutos antes do processamento'
-  )
-);
 ```
 
 **Exemplo de uso:** Tabelas como `raw_claims_api`, `raw_policies_export`, `raw_customer_data` receberiam dados diretamente de APIs ou sistemas externos.
@@ -111,15 +101,8 @@ WITH (
 ##### **01_bronze** - Preservação de Dados Brutos
 
 ```sql
-CREATE SCHEMA IF NOT EXISTS smart_claims_dev.`01_bronze`
+CREATE SCHEMA IF NOT EXISTS smart_claims_dev.01_bronze
 COMMENT 'Camada Bronze - dados brutos preservados de forma imutável'
-WITH (
-  DBPROPERTIES (
-    'layer' = 'bronze',
-    'retention_days' = '365',
-    'purpose' = 'Armazenamento permanente de dados brutos para auditoria e reprocessamento'
-  )
-);
 ```
 
 **Exemplo de uso:** Tabelas como `bronze.claims_raw`, `bronze.policies_raw`, `bronze.customers_raw` manteriam uma cópia imutável de todos os dados originais, permitindo auditoria e reprocessamento histórico.
@@ -127,15 +110,8 @@ WITH (
 ##### **02_silver** - Dados Curados
 
 ```sql
-CREATE SCHEMA IF NOT EXISTS smart_claims_dev.`02_silver`
+CREATE SCHEMA IF NOT EXISTS smart_claims_dev.02_silver
 COMMENT 'Camada Silver - dados limpos, validados e enriquecidos'
-WITH (
-  DBPROPERTIES (
-    'layer' = 'silver',
-    'retention_days' = '730',
-    'purpose' = 'Dados curados e prontos para consumo analítico e operacional'
-  )
-);
 ```
 
 **Exemplo de uso:** Tabelas como `silver.claims_clean`, `silver.claims_enriched`, `silver.customers_master` conteriam dados após:
@@ -148,15 +124,8 @@ WITH (
 ##### **03_gold** - Dados para Consumo Final
 
 ```sql
-CREATE SCHEMA IF NOT EXISTS smart_claims_dev.`03_gold`
+CREATE SCHEMA IF NOT EXISTS smart_claims_dev.03_gold
 COMMENT 'Camada Gold - dados agregados e modelados para consumo final'
-WITH (
-  DBPROPERTIES (
-    'layer' = 'gold',
-    'retention_days' = '2555',
-    'purpose' = 'Dados agregados e otimizados para dashboards, relatórios e ML'
-  )
-);
 ```
 
 **Exemplo de uso:** Tabelas como `gold.claims_by_month`, `gold.claims_summary`, `gold.customer_claims_facts` seriam otimizadas para:
@@ -176,27 +145,31 @@ Schema automático do Unity Catalog que contém metadados sobre todos os objetos
 
 #### 3. **Comandos de Verificação Incluídos**
 
-O script também inclui comandos para validação da estrutura criada:
+O notebook inclui comandos para validação da estrutura criada, cada um em uma célula separada:
 
 ```sql
 -- Listar catálogos
-SHOW CATALOGS LIKE 'smart_claims*';
+SHOW CATALOGS LIKE 'smart_claims*'
 
--- Listar schemas
-SHOW SCHEMAS IN CATALOG smart_claims_dev;
+-- Listar schemas no catálogo
+SHOW SCHEMAS IN smart_claims_dev
 
--- Descrever catálogo e schemas
-DESCRIBE CATALOG smart_claims_dev;
-DESCRIBE SCHEMA smart_claims_dev.`01_bronze`;
+-- Descrever catálogo
+DESCRIBE CATALOG smart_claims_dev
+
+-- Descrever schema específico
+DESCRIBE SCHEMA smart_claims_dev.00_landing
 ```
 
 ### Arquivos Gerados
 
-1. **`01_create_catalog_and_schemas.sql`**
-   - Script SQL completo e idempotente (pode ser executado múltiplas vezes)
-   - Comentários detalhados explicando cada comando
+1. **`01_create_catalog_and_schemas.ipynb`**
+   - Notebook Databricks completo com células SQL
+   - Cada comando SQL em uma célula separada para execução individual
+   - Comentários markdown explicando cada comando e sua função
    - Comandos de verificação incluídos
-   - Pronto para execução no Databricks Notebook
+   - Idempotente (pode ser executado múltiplas vezes sem erro)
+   - Pronto para execução no Databricks Workspace
 
 2. **`EXPLICACAO_CATALOG.md`**
    - Documentação completa sobre Unity Catalog
@@ -206,21 +179,48 @@ DESCRIBE SCHEMA smart_claims_dev.`01_bronze`;
 
 ### Como Executar
 
-1. Abra o Databricks Workspace
-2. Crie um novo notebook SQL
-3. Copie e cole o conteúdo de `01_create_catalog_and_schemas.sql`
-4. Execute todas as células sequencialmente
-5. Verifique os resultados usando os comandos `SHOW` e `DESCRIBE`
+1. **Importe o notebook no Databricks:**
+   - No workspace, vá em **Workspace** → **Import**
+   - Selecione o arquivo `01_create_catalog_and_schemas.ipynb`
+   - Ou arraste e solte o arquivo na interface
+
+2. **Execute as células sequencialmente:**
+   - Execute as células markdown (apenas para leitura)
+   - Execute as células SQL uma por uma ou use "Run All"
+   - Cada comando SQL está em uma célula separada
+
+3. **Verifique os resultados:**
+   - Execute as células de verificação (SHOW CATALOGS, SHOW SCHEMAS, DESCRIBE)
+   - Confirme que o catálogo e todos os schemas foram criados com sucesso
 
 ### Resultado Esperado
 
-Após a execução bem-sucedida, você terá:
+Após a execução bem-sucedida do notebook, você terá:
 
-- ✅ 1 catálogo criado: `smart_claims_dev`
-- ✅ 6 schemas criados dentro do catálogo
+- ✅ 1 catálogo criado: `smart_claims_dev` com comentário descritivo
+- ✅ 4 schemas principais criados (00_landing, 01_bronze, 02_silver, 03_gold)
+- ✅ Schema `default` disponível para uso geral
+- ✅ Schema `information_schema` criado automaticamente pelo Unity Catalog
 - ✅ Estrutura completa para iniciar ingestão de dados
-- ✅ Base sólida para implementar pipelines de dados
+- ✅ Base sólida para implementar pipelines de dados seguindo Medallion Architecture
 - ✅ Governança de dados configurada com Unity Catalog
+
+### Estrutura do Notebook
+
+O notebook está organizado em 3 partes principais:
+
+1. **Parte 1: Criar o Catálogo** (2 células SQL)
+   - CREATE CATALOG
+   - USE CATALOG
+
+2. **Parte 2: Criar os Schemas** (4 células SQL)
+   - CREATE SCHEMA para cada camada (00_landing, 01_bronze, 02_silver, 03_gold)
+
+3. **Parte 3: Verificação** (4 células SQL)
+   - SHOW CATALOGS
+   - SHOW SCHEMAS
+   - DESCRIBE CATALOG
+   - DESCRIBE SCHEMA
 
 ### Próximos Passos
 
