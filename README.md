@@ -17,25 +17,149 @@
 
 O projeto segue o padrão **Medallion Architecture**, organizando dados em camadas progressivas:
 
-```text
-smart_claims_dev (CATALOG)
-│
-├── 00_landing       → Zona de recepção de dados brutos
-├── 01_bronze        → Dados brutos preservados imutavelmente
-├── 02_silver        → Dados limpos, validados e enriquecidos
-├── 03_gold          → Dados agregados e modelados para consumo
-├── default          → Schema padrão para objetos diversos
-└── information_schema → Metadados do sistema
+```mermaid
+graph TB
+    subgraph "smart_claims_dev (CATALOG)"
+        L[00_landing<br/>Zona de Recepção<br/>RAW Files]
+        B[01_bronze<br/>Dados Brutos<br/>Imutáveis]
+        S[02_silver<br/>Dados Curados<br/>Validados]
+        G[03_gold<br/>Dados Agregados<br/>Otimizados]
+        D[default<br/>Schema Padrão]
+        I[information_schema<br/>Metadados Sistema]
+    end
+    
+    L -->|Ingestão| B
+    B -->|Limpeza & Validação| S
+    S -->|Agregação & Modelagem| G
+    
+    style L fill:#ff9999
+    style B fill:#ffcc99
+    style S fill:#99ccff
+    style G fill:#99ff99
+```
+
+### Estrutura Hierárquica do Catálogo
+
+```mermaid
+graph TD
+    CAT[smart_claims_dev<br/>CATALOG]
+    
+    CAT --> SCH1[00_landing<br/>SCHEMA]
+    CAT --> SCH2[01_bronze<br/>SCHEMA]
+    CAT --> SCH3[02_silver<br/>SCHEMA]
+    CAT --> SCH4[03_gold<br/>SCHEMA]
+    CAT --> SCH5[default<br/>SCHEMA]
+    
+    SCH1 --> V1[claims<br/>VOLUME]
+    SCH1 --> V2[sql_server<br/>VOLUME]
+    SCH1 --> V3[telematics<br/>VOLUME]
+    SCH1 --> V4[training_imgs<br/>VOLUME]
+    
+    SCH2 --> T1[claim<br/>TABLE]
+    SCH2 --> T2[customer<br/>TABLE]
+    SCH2 --> T3[policy<br/>TABLE]
+    SCH2 --> T4[telematics<br/>TABLE]
+    
+    SCH3 --> T5[claim<br/>TABLE]
+    SCH3 --> T6[customer<br/>TABLE]
+    SCH3 --> T7[policy<br/>TABLE]
+    SCH3 --> T8[telematics<br/>TABLE]
+    
+    SCH4 --> T9[aggregated_telematics<br/>TABLE]
+    SCH4 --> T10[customer_claim_policy<br/>TABLE]
+    SCH4 --> T11[customer_claim_policy_telematics<br/>TABLE]
+    
+    style CAT fill:#4a90e2,color:#fff
+    style SCH1 fill:#ff9999
+    style SCH2 fill:#ffcc99
+    style SCH3 fill:#99ccff
+    style SCH4 fill:#99ff99
 ```
 
 ### Descrição das Camadas
 
 | Camada | Propósito | Retenção | Formato |
 |--------|-----------|----------|---------|
-| **00_landing** | Recepção inicial de dados de sistemas externos | 7 dias | RAW (JSON, CSV, Parquet) |
+| **00_landing** | Recepção inicial de dados de sistemas externos | 7 dias | RAW (CSV, Parquet, Imagens) |
 | **01_bronze** | Preservação imutável dos dados originais | 365 dias | Delta Lake (append-only) |
 | **02_silver** | Dados limpos, validados e enriquecidos | 730 dias | Delta Lake (schema definido) |
 | **03_gold** | Dados agregados e otimizados para consumo final | 2555 dias | Delta Lake (otimizado, particionado) |
+
+### Fluxo Completo de Dados
+
+```mermaid
+flowchart LR
+    subgraph "Fontes de Dados"
+        SQL[SQL Server<br/>CSV Files]
+        TEL[Telemetria<br/>Parquet Files]
+        IMG[Imagens<br/>PNG/JPG]
+    end
+    
+    subgraph "00_landing - Volumes"
+        V1[claims<br/>Volume]
+        V2[sql_server<br/>Volume]
+        V3[telematics<br/>Volume]
+        V4[training_imgs<br/>Volume]
+    end
+    
+    subgraph "01_bronze - Tabelas Raw"
+        B1[claim<br/>TABLE]
+        B2[customer<br/>TABLE]
+        B3[policy<br/>TABLE]
+        B4[telematics<br/>TABLE]
+    end
+    
+    subgraph "02_silver - Tabelas Curadas"
+        S1[claim<br/>TABLE]
+        S2[customer<br/>TABLE]
+        S3[policy<br/>TABLE]
+        S4[telematics<br/>TABLE]
+    end
+    
+    subgraph "03_gold - Tabelas Agregadas"
+        G1[aggregated_telematics<br/>TABLE]
+        G2[customer_claim_policy<br/>TABLE]
+        G3[customer_claim_policy_telematics<br/>TABLE]
+    end
+    
+    SQL --> V1
+    SQL --> V2
+    TEL --> V3
+    IMG --> V4
+    
+    V1 --> B1
+    V2 --> B2
+    V2 --> B3
+    V3 --> B4
+    
+    B1 --> S1
+    B2 --> S2
+    B3 --> S3
+    B4 --> S4
+    
+    S4 --> G1
+    S1 --> G2
+    S2 --> G2
+    S3 --> G2
+    G1 --> G3
+    G2 --> G3
+    
+    style V1 fill:#ffcccc
+    style V2 fill:#ffcccc
+    style V3 fill:#ffcccc
+    style V4 fill:#ffcccc
+    style B1 fill:#ffe6cc
+    style B2 fill:#ffe6cc
+    style B3 fill:#ffe6cc
+    style B4 fill:#ffe6cc
+    style S1 fill:#ccf2ff
+    style S2 fill:#ccf2ff
+    style S3 fill:#ccf2ff
+    style S4 fill:#ccf2ff
+    style G1 fill:#ccffcc
+    style G2 fill:#ccffcc
+    style G3 fill:#ccffcc
+```
 
 ---
 
@@ -43,14 +167,34 @@ smart_claims_dev (CATALOG)
 
 ```text
 smart_claims_dev/
-├── README.md                              # Este arquivo
+├── README.md                              # Este arquivo - documentação principal
 ├── EXPLICACAO_CATALOG.md                  # Documentação detalhada sobre Unity Catalog
-├── 01_create_catalog_and_schemas.ipynb   # Notebook Databricks para Task_001
-├── 02_create_volumes_and_load_data.ipynb # Notebook Databricks para Task_002
-└── data/
-    ├── claims.csv                         # Dados de sinistros
-    ├── customers.csv                      # Dados de clientes
-    └── policies.csv                       # Dados de apólices
+├── 01_create_catalog_and_schemas.ipynb   # Notebook: Task_001 - Criar catálogo e schemas
+├── 02_create_volumes_and_load_data.ipynb  # Notebook: Task_002 - Criar volumes
+├── ingest_sql/                            # Scripts SQL para pipelines DLT
+│   ├── README.md                          # Documentação dos pipelines
+│   ├── source_to_bronze/                  # Ingestão: Volumes → Bronze
+│   │   ├── get_claim.sql
+│   │   ├── get_customers.sql
+│   │   ├── get_policies.sql
+│   │   └── get_telematics.sql
+│   ├── bronze_to_silver/                  # Transformação: Bronze → Silver
+│   │   ├── clean_claim.sql
+│   │   ├── clean_customer.sql
+│   │   ├── clean_policy.sql
+│   │   └── clean_telematics.sql
+│   └── silver_to_gold/                    # Agregação: Silver → Gold
+│       ├── aggregated_telematics.sql
+│       ├── customer_claim_policy.sql
+│       └── customer_claim_policy_telematics.sql
+└── data/                                  # Dados de exemplo
+    ├── claims/                            # Imagens e metadata de sinistros
+    ├── sql_server/                        # CSV do SQL Server
+    │   ├── claims.csv
+    │   ├── customers.csv
+    │   └── policies.csv
+    ├── telematics/                        # Arquivos Parquet de telemetria
+    └── training_imgs/                     # Imagens PNG para treinamento ML
 ```
 
 ---
@@ -222,16 +366,33 @@ O notebook está organizado em 3 partes principais:
    - DESCRIBE CATALOG
    - DESCRIBE SCHEMA
 
+### Pipeline Completo de Dados
+
+```mermaid
+sequenceDiagram
+    participant Ext as Fontes Externas
+    participant Land as 00_landing<br/>(Volumes)
+    participant Brz as 01_bronze<br/>(Raw Tables)
+    participant Sil as 02_silver<br/>(Clean Tables)
+    participant Gld as 03_gold<br/>(Aggregated)
+    
+    Ext->>Land: Upload CSV/Parquet/Imagens
+    Land->>Brz: Pipeline: source_to_bronze<br/>(cloud_files)
+    Brz->>Sil: Pipeline: bronze_to_silver<br/>(Transformações)
+    Sil->>Gld: Pipeline: silver_to_gold<br/>(Joins & Agregações)
+    Gld->>Gld: Tabelas prontas para<br/>Dashboards, ML, BI
+```
+
 ### Próximos Passos
 
 Após concluir a Task_001, as próximas etapas incluem:
 
-- **Task_002**: Criar volumes no schema 00_landing e carregar arquivos CSV (✅ Concluída)
-- **Task_003**: Criar tabelas Delta a partir dos arquivos CSV nos volumes
-- **Task_004**: Configurar permissões e roles (data engineers, analysts, etc.)
-- **Task_005**: Implementar pipelines de ingestão (Landing → Bronze)
-- **Task_006**: Criar transformações (Bronze → Silver → Gold)
-- **Task_007**: Configurar monitoramento e alertas
+- **Task_002**: Criar volumes no schema 00_landing e carregar arquivos (✅ Concluída)
+- **Task_003**: Executar pipelines de ingestão (source_to_bronze) ✅ Concluída
+- **Task_004**: Executar transformações (bronze_to_silver) ✅ Concluída
+- **Task_005**: Executar agregações (silver_to_gold) ✅ Concluída
+- **Task_006**: Configurar permissões e roles (data engineers, analysts, etc.)
+- **Task_007**: Configurar monitoramento, alertas e qualidade de dados
 
 ---
 
