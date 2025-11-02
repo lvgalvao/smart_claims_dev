@@ -1,9 +1,9 @@
 -- Gold - Join final de customer_claim_policy com telemetria agregada
 -- Adiciona dados de telemetria agregados aos sinistros
 -- Nota: Geocoding de endereços pode ser feito posteriormente via Python/Spark se necessário
--- Tabela não-streaming (batch) - lê de customer_claim_policy (streaming) e aggregated_telematics (batch)
+-- Tabela streaming - processa novos dados incrementalmente
 
-CREATE OR REFRESH TABLE smart_claims_dev.03_gold.customer_claim_policy_telematics (
+CREATE OR REFRESH STREAMING TABLE smart_claims_dev.03_gold.customer_claim_policy_telematics (
   CONSTRAINT valid_borough EXPECT (borough IS NOT NULL)
 )
 COMMENT "Sinistros completos com apólices, clientes e telemetria agregada"
@@ -70,7 +70,7 @@ SELECT
   ccp.joined_at,
   t.aggregated_at AS telematics_aggregated_at,
   current_timestamp() AS final_joined_at
-FROM smart_claims_dev.03_gold.customer_claim_policy ccp
+FROM STREAM(smart_claims_dev.03_gold.customer_claim_policy) ccp
 LEFT JOIN smart_claims_dev.03_gold.aggregated_telematics t
   ON ccp.chassis_no = t.chassis_no
 WHERE ccp.borough IS NOT NULL;
