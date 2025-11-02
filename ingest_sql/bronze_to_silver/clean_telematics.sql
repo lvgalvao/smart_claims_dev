@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING TABLE 02_silver.telematics (
+CREATE OR REFRESH STREAMING TABLE smart_claims_dev.02_silver.telematics (
   CONSTRAINT valid_coordinates EXPECT (latitude BETWEEN -90 AND 90 AND longitude BETWEEN -180 AND 180)
 ) AS
 SELECT
@@ -10,4 +10,4 @@ SELECT
   input_file,
   input_file_mtime,
   ingested_at
-FROM STREAM(01_bronze.telematics);
+FROM STREAM(smart_claims_dev.01_bronze.telematics);

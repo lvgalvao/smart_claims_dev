@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE 01_bronze.policy
+CREATE OR REFRESH STREAMING LIVE TABLE smart_claims_dev.01_bronze.policy
 COMMENT "Bronze — apólices (policies) a partir de 00_landing/sql_server/policies.csv"
 TBLPROPERTIES ("quality" = "bronze")
 AS

@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING LIVE TABLE 01_bronze.customer
+CREATE OR REFRESH STREAMING LIVE TABLE smart_claims_dev.01_bronze.customer
 COMMENT "Bronze — clientes (customers) a partir de 00_landing/sql_server/customers.csv"
 TBLPROPERTIES ("quality" = "bronze")
 AS

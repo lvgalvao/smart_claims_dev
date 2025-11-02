@@ -1,4 +1,4 @@
-CREATE OR REFRESH STREAMING TABLE 02_silver.claim (
+CREATE OR REFRESH STREAMING TABLE smart_claims_dev.02_silver.claim (
   CONSTRAINT valid_claim_number EXPECT (claim_no IS NOT NULL),
   CONSTRAINT valid_incident_hour EXPECT (incident_hour BETWEEN 0 AND 23)
 ) AS
@@ -10,4 +10,4 @@ SELECT
   incident_hour,
   *
 EXCEPT (claim_date, incident_date, license_issue_date)
-FROM STREAM(01_bronze.claim);
+FROM STREAM(smart_claims_dev.01_bronze.claim);
